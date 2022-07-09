@@ -32,11 +32,18 @@ public class MergeIncrementalFFS {
 
     public void doMerge() throws IOException {
 
+        System.out.println("************** Base FFS " + baseFFS.getAbsolutePath());
+        System.out.println("************** incrementalFFS FFS " + incrementalFFS.getAbsolutePath());
+        System.out.println("**************  merged FFS " + merged.getAbsolutePath());
+
         try(BufferedWriter writer = FlatFileStoreUtils.createWriter(merged, false);
             BufferedReader br = new BufferedReader( new FileReader(baseFFS));
-            BufferedReader br2 = new BufferedReader(new FileReader(incrementalFFS))) {
+            BufferedReader br2 = FlatFileStoreUtils.createReader(incrementalFFS, true)) {
             String baseLine = br.readLine();
             String incLine = br2.readLine();
+
+            System.out.println("Reading first incremental liine - " + incLine);
+
             comparator = (e1, e2) -> new PathElementComparator(preferredPathElements).compare(e1.getPathElements(), e2.getPathElements());
             int compared;
             while (true) {
@@ -69,6 +76,7 @@ public class MergeIncrementalFFS {
                     writer.write(removeOperand(incLine));
                     writer.newLine();
                     incLine = br2.readLine();
+                    System.out.println("Reading incremental liine - " + incLine);
                 } else {
                     String operand = NodeStateEntryWriter.getParts(incLine)[2];
                     if (!("D".equals(operand))) {
@@ -77,6 +85,7 @@ public class MergeIncrementalFFS {
                     }
                     baseLine = br.readLine();
                     incLine = br2.readLine();
+                    System.out.println("Reading incremental liine - " + incLine);
                 }
             }
         }
