@@ -36,8 +36,8 @@ public class MergeIncrementalFFS {
         System.out.println("************** incrementalFFS FFS " + incrementalFFS.getAbsolutePath());
         System.out.println("**************  merged FFS " + merged.getAbsolutePath());
 
-        try(BufferedWriter writer = FlatFileStoreUtils.createWriter(merged, false);
-            BufferedReader br = new BufferedReader( new FileReader(baseFFS));
+        try(BufferedWriter writer = FlatFileStoreUtils.createWriter(merged, true);
+            BufferedReader br = FlatFileStoreUtils.createReader(baseFFS, true);
             BufferedReader br2 = FlatFileStoreUtils.createReader(incrementalFFS, true)) {
             String baseLine = br.readLine();
             String incLine = br2.readLine();

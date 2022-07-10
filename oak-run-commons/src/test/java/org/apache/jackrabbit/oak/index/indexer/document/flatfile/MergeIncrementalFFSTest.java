@@ -1,5 +1,6 @@
 package org.apache.jackrabbit.oak.index.indexer.document.flatfile;
 
+import org.apache.commons.io.FileUtils;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -26,9 +27,9 @@ public class MergeIncrementalFFSTest {
     @Ignore
     @Test
     public void test2() throws IOException {
-        File base = new File("/Users/nitigup/garageweek_2022/baseFFS2.json");
-        File incremental = new File("/Users/nitigup/garageweek_2022/incrementalFFS2.json");
-        File merged = new File("/Users/nitigup/garageweek_2022/merged3.json");
+        File base = new File("/Users/nitigup/garageweek_2022/temp/merged_ffs_file1657343075897");
+        File incremental = new File("/Users/nitigup/garageweek_2022/temp/inc.json.gz");
+        File merged = new File("/Users/nitigup/garageweek_2022/temp/merged3.json");
 
         MergeIncrementalFFS merge = new MergeIncrementalFFS(Collections.emptySet(), base, incremental, merged);
 
@@ -40,11 +41,11 @@ public class MergeIncrementalFFSTest {
     @Test
     public void test1() throws IOException {
 
-        File base = folder.newFile("base.txt");
-        File inc = folder.newFile("inc.txt");
-        File merged = folder.newFile("merged.txt");
+        File base = folder.newFile("base.gz");
+        File inc = folder.newFile("inc.gz");
+        File merged = folder.newFile("merged.gz");
 
-        try(BufferedWriter baseBW = new BufferedWriter(new FileWriter(base))) {
+        try(BufferedWriter baseBW = FlatFileStoreUtils.createWriter(base, true)) {
             baseBW.write("/tmp|{prop1=\"foo\"}");
             baseBW.newLine();
             baseBW.write("/tmp/a|{prop2=\"foo\"}");
@@ -58,7 +59,7 @@ public class MergeIncrementalFFSTest {
             baseBW.write("/tmp/c|{prop3=\"foo\"}");
         }
 
-        try(BufferedWriter baseInc = new BufferedWriter(new FileWriter(inc))) {
+        try(BufferedWriter baseInc = FlatFileStoreUtils.createWriter(inc, true)) {
             baseInc.write("/tmp/a|{prop2=\"fooModified\"}|M");
             baseInc.newLine();
             baseInc.write("/tmp/b|{prop1=\"foo\"}|D");
@@ -87,7 +88,7 @@ public class MergeIncrementalFFSTest {
 
         merge.doMerge();
 
-        try(BufferedReader br = new BufferedReader(new FileReader(merged))) {
+        try(BufferedReader br = FlatFileStoreUtils.createReader(merged, true)) {
             for (String line : expectedList) {
                 String actual = br.readLine();
                 System.out.println(actual);
