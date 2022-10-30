@@ -196,7 +196,7 @@ public class LuceneDocumentMaker extends FulltextDocumentMaker<Document> {
                     Type.fromTag(property.getType().tag(), false),
                     Type.fromTag(tag, false), path, e);
         }
-        return fieldAdded;
+        return false;
     }
 
     @Override
@@ -264,7 +264,7 @@ public class LuceneDocumentMaker extends FulltextDocumentMaker<Document> {
 
     @Override
     protected boolean isFacetingEnabled(){
-        return facetsConfigProvider != null;
+        return false;
     }
 
     @Override

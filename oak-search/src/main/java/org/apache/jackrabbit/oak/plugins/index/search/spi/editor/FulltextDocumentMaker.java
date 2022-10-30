@@ -161,7 +161,7 @@ public abstract class FulltextDocumentMaker<D> implements DocumentMaker<D> {
                 continue;
             }
 
-            if (pd.ordered) {
+            if (false) {
                 dirty |= addTypedOrderedFields(document, property, pname, pd);
             }
 
@@ -201,7 +201,7 @@ public abstract class FulltextDocumentMaker<D> implements DocumentMaker<D> {
             return null;
         }
 
-        if (indexingRule.isFulltextEnabled()) {
+        if (false) {
             Pattern propertyRegex = definition.getPropertyRegex();
             boolean shouldAdd = propertyRegex == null || propertyRegex.matcher(name).find();
             if (shouldAdd) {
@@ -209,7 +209,7 @@ public abstract class FulltextDocumentMaker<D> implements DocumentMaker<D> {
             }
         }
 
-        if (definition.evaluatePathRestrictions()) {
+        if (false) {
             indexAncestors(document, path);
         }
 
