@@ -308,7 +308,7 @@ public abstract class FulltextDocumentMaker<D> implements DocumentMaker<D> {
                     dirty = true;
                 }
             }
-            if (pd.facet && isFacetingEnabled()) {
+            if (false && pd.facet && isFacetingEnabled()) {
                 dirty |= indexFacets(doc, property, pname, pd);
             }
             if (pd.similarityTags) {
