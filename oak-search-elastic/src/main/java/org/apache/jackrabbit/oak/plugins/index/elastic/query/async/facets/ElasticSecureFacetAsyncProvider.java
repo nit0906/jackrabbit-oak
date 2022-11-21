@@ -17,7 +17,6 @@
 package org.apache.jackrabbit.oak.plugins.index.elastic.query.async.facets;
 
 import co.elastic.clients.elasticsearch.core.search.Hit;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.jackrabbit.oak.plugins.index.elastic.query.ElasticRequestHandler;
 import org.apache.jackrabbit.oak.plugins.index.elastic.query.ElasticResponseHandler;
@@ -76,15 +75,15 @@ class ElasticSecureFacetAsyncProvider implements ElasticFacetProvider, ElasticRe
         final String path = elasticResponseHandler.getPath(searchHit);
         if (path != null && isAccessible.test(path)) {
             for (String field: facetFields) {
-                JsonNode value = searchHit.source().get(field);
+                String value = searchHit.source().get(field).asText();
                 if (value != null) {
                     facetsMap.compute(field, (column, facetValues) -> {
                         if (facetValues == null) {
                             Map<String, Integer> values = new HashMap<>();
-                            values.put(value.asText(), 1);
+                            values.put(value, 1);
                             return values;
                         } else {
-                            facetValues.merge(value.asText(), 1, Integer::sum);
+                            facetValues.merge(value, 1, Integer::sum);
                             return facetValues;
                         }
                     });
