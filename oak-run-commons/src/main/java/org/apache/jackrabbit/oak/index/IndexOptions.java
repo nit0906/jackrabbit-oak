@@ -50,6 +50,7 @@ public class IndexOptions implements OptionsBean {
     private final OptionSpec<Void> definitions;
     private final OptionSpec<Void> dumpIndex;
     private final OptionSpec<Void> reindex;
+    private final OptionSpec<Void> bootstrapIndex;
     private final OptionSpec<Void> ignoreMissingTikaDep;
     private final OptionSpec<Void> asyncIndex;
     private final OptionSpec<Void> importIndex;
@@ -62,6 +63,8 @@ public class IndexOptions implements OptionsBean {
     protected final Set<OptionSpec> actionOpts;
     private final OptionSpec<String> indexPaths;
     private final OptionSpec<String> checkpoint;
+    private final OptionSpec<String> sourceIndex;
+    private final OptionSpec<String> destIndex;
     private final OptionSpec<String> asyncIndexLanes;
     private final Set<String> operationNames;
     private final OptionSpec<File> existingDataDumpDirOpt;
@@ -100,6 +103,9 @@ public class IndexOptions implements OptionsBean {
 
         dumpIndex = parser.accepts("index-dump", "Dumps index content");
         reindex = parser.accepts("reindex", "Reindex the indexes specified by --index-paths or --index-definitions-file");
+        bootstrapIndex = parser.accepts("bootstrap-index", "Reindex the indexes specified by --index-paths or --index-definitions-file");
+        sourceIndex = parser.accepts("source-index").withRequiredArg().ofType(String.class);
+        destIndex = parser.accepts("dest-index").withRequiredArg().ofType(String.class);
         ignoreMissingTikaDep = parser.accepts("ignore-missing-tika-dep", "Ignore when there are missing tika dependencies and continue to run");
         asyncIndex = parser.accepts("async-index", "Runs async index cycle");
 
@@ -119,7 +125,7 @@ public class IndexOptions implements OptionsBean {
                 .withRequiredArg().ofType(File.class);
 
         //Set of options which define action
-        actionOpts = ImmutableSet.of(stats, definitions, consistencyCheck, dumpIndex, reindex, importIndex);
+        actionOpts = ImmutableSet.of(stats, definitions, consistencyCheck, dumpIndex, reindex, importIndex, bootstrapIndex);
         operationNames = collectionOperationNames(actionOpts);
         existingDataDumpDirOpt = parser.accepts("existing-data-dump-dir", "Directory containing document store dumps" +
                 " from previous incomplete run")
@@ -209,6 +215,10 @@ public class IndexOptions implements OptionsBean {
         return options.has(reindex);
     }
 
+    public boolean isBootstrapIndex() {
+        return options.has(bootstrapIndex);
+    }
+
     public boolean isIgnoreMissingTikaDep() {
         return options.has(ignoreMissingTikaDep);
     }
@@ -235,6 +245,14 @@ public class IndexOptions implements OptionsBean {
 
     public String getCheckpoint(){
         return checkpoint.value(options);
+    }
+
+    public String getSourceIndex() {
+        return sourceIndex.value(options);
+    }
+
+    public String getDestIndex() {
+        return destIndex.value(options);
     }
 
     public List<String> getIndexPaths(){

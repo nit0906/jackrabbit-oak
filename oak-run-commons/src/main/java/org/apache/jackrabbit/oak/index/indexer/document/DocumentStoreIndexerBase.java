@@ -23,7 +23,13 @@ import com.codahale.metrics.MetricRegistry;
 import com.mongodb.client.MongoDatabase;
 import org.apache.jackrabbit.guava.common.base.Stopwatch;
 import org.apache.jackrabbit.guava.common.io.Closer;
+import org.apache.jackrabbit.oak.Oak;
 import org.apache.jackrabbit.oak.api.CommitFailedException;
+import org.apache.jackrabbit.oak.api.ContentSession;
+import org.apache.jackrabbit.oak.api.Root;
+import org.apache.jackrabbit.oak.api.Tree;
+import org.apache.jackrabbit.oak.api.Type;
+import org.apache.jackrabbit.oak.commons.PathUtils;
 import org.apache.jackrabbit.oak.commons.concurrent.ExecutorCloser;
 import org.apache.jackrabbit.oak.index.IndexHelper;
 import org.apache.jackrabbit.oak.index.IndexerSupport;
@@ -49,15 +55,20 @@ import org.apache.jackrabbit.oak.plugins.index.NodeTraversalCallback;
 import org.apache.jackrabbit.oak.plugins.index.progress.IndexingProgressReporter;
 import org.apache.jackrabbit.oak.plugins.index.progress.MetricRateEstimator;
 import org.apache.jackrabbit.oak.plugins.index.search.IndexDefinition;
+import org.apache.jackrabbit.oak.plugins.index.search.util.IndexDefinitionBuilder;
 import org.apache.jackrabbit.oak.plugins.memory.MemoryNodeStore;
 import org.apache.jackrabbit.oak.plugins.metric.MetricStatisticsProvider;
+import org.apache.jackrabbit.oak.plugins.migration.NodeStateCopier;
+import org.apache.jackrabbit.oak.spi.commit.CommitHook;
 import org.apache.jackrabbit.oak.spi.commit.CommitInfo;
 import org.apache.jackrabbit.oak.spi.commit.EmptyHook;
 import org.apache.jackrabbit.oak.spi.state.NodeBuilder;
 import org.apache.jackrabbit.oak.spi.state.NodeState;
 import org.apache.jackrabbit.oak.spi.state.NodeStateUtils;
 import org.apache.jackrabbit.oak.spi.state.NodeStore;
+import org.apache.jackrabbit.oak.spi.whiteboard.Whiteboard;
 import org.apache.jackrabbit.oak.stats.StatisticsProvider;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +76,9 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -236,6 +249,47 @@ public abstract class DocumentStoreIndexerBase implements Closeable {
         log.info("Completed incremental store build in {}", incrementalStoreWatch);
         return incrementalStore;
     }
+
+    public static void reindexIncremental(NodeStore store, String existingIndexPath, String newIndexPath, Map<String, List<String>> propAdditions) throws CommitFailedException {
+        //NodeState checkpointedState = store.getRoot();
+        //NodeStore copyOnWriteStore = new MemoryNodeStore(checkpointedState);
+        NodeStateCopier.Builder copyBuilder = NodeStateCopier.builder();
+        NodeState sourceState = null;
+        NodeState parent = store.getRoot();
+        NodeBuilder parentBuilder = store.getRoot().builder();
+        NodeBuilder temp = parentBuilder;
+        NodeBuilder targetBuilder = null;
+        for (String path : PathUtils.elements(existingIndexPath)) {
+            System.out.println("Getting source state - " + path);
+            sourceState = parent.getChildNode(path);
+            parent = sourceState;
+        }
+
+        for (String path: PathUtils.elements(newIndexPath)) {
+            System.out.println("Getting dest builder - " + path);
+            targetBuilder = temp.child(path);
+            temp = targetBuilder;
+        }
+        copyBuilder.copy(sourceState, targetBuilder);
+
+        IndexDefinitionBuilder indexDefinitionBuilder = new IndexDefinitionBuilder(targetBuilder, false);
+        Tree idxTree = indexDefinitionBuilder.getBuilderTree();
+        idxTree.setProperty("type", sourceState.builder().getProperty("type").getValue(Type.STRING));
+        idxTree.setProperty("merges", Arrays.asList("/oak:index/testIndex"), Type.STRINGS);
+        idxTree.setProperty("refresh", true);
+        indexDefinitionBuilder.async("async");
+
+        for (String indexRule : propAdditions.keySet()) {
+            List<String> properties = propAdditions.get(indexRule);
+            for (String prop : properties) {
+                indexDefinitionBuilder.indexRule(indexRule).property(prop).propertyIndex();
+            }
+        }
+        indexDefinitionBuilder.build();
+
+        store.merge(parentBuilder, EmptyHook.INSTANCE, CommitInfo.EMPTY);
+    }
+
 
     /**
      * @return an Instance of FlatFileStore, whose getFlatFileStorePath() method can be used to get the absolute path to this store.

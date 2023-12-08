@@ -84,6 +84,7 @@ public class ReindexIT extends LuceneAbstractIndexCommandTest {
     }
 
 
+
     @Test
     public void reindexOutOfBand() throws Exception{
         createTestData(true);

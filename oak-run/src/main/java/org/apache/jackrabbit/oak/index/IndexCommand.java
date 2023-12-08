@@ -49,9 +49,12 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -119,6 +122,20 @@ public class IndexCommand implements Command {
 
         boolean success = false;
         try {
+
+            if (indexOpts.isBootstrapIndex()) {
+                try (Closer closer = Closer.create()) {
+                    NodeStoreFixture fixture = NodeStoreFixtureProvider.create(opts);
+                    long start = System.currentTimeMillis();
+                    Map<String, List<String>> propAdditions = new LinkedHashMap<>();
+                    propAdditions.put("nt:base", Arrays.asList("testProp1", "testProp2"));
+                    DocumentStoreIndexer.reindexIncremental(fixture.getStore(), indexOpts.getSourceIndex(), indexOpts.getDestIndex(), propAdditions);
+                    System.out.println("time taken - " + (System.currentTimeMillis() - start));
+                    closer.register(fixture);
+                    return;
+                }
+            }
+
             if (indexOpts.isReindex() && opts.getCommonOpts().isReadWrite()) {
                 performReindexInReadWriteMode(indexOpts);
             } else if (indexOpts.isAsyncIndex()) {
